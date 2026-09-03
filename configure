@@ -906,6 +906,10 @@ TZPATH
 LIBUUID_LIBS
 LIBUUID_CFLAGS
 PERF_TRAMPOLINE_OBJ
+BPF_STACK_OBJ
+BPF_CLANG
+BPF_LD
+BPF_OBJCOPY
 SHLIBS
 CFLAGSFORSHARED
 LINKFORSHARED
@@ -1160,6 +1164,7 @@ with_openssl_rpath
 with_ssl_default_suites
 with_builtin_hashlib_hashes
 enable_test_modules
+enable_bpf_stack
 with_build_details_suffix
 '
       ac_precious_vars='build_alias
@@ -1179,6 +1184,9 @@ PROFILE_TASK
 BOLT_COMMON_FLAGS
 BOLT_INSTRUMENT_FLAGS
 BOLT_APPLY_FLAGS
+BPF_CLANG
+BPF_LD
+BPF_OBJCOPY
 LIBUUID_CFLAGS
 LIBUUID_LIBS
 LIBFFI_CFLAGS
@@ -1865,6 +1873,7 @@ Optional Features:
                           (default is no)
   --enable-bolt           enable usage of the llvm-bolt post-link optimizer
                           (default is no)
+  --disable-bpf-stack     do not embed the Linux eBPF stack unwinder
   --enable-safety         enable usage of the security compiler options with
                           no performance overhead
   --enable-slower-safety  enable usage of the security compiler options with
@@ -14676,6 +14685,81 @@ printf "%s\n" "#define PY_HAVE_PERF_TRAMPOLINE 1" >>confdefs.h
 
 fi
 
+
+# The BPF stack unwinder is a Linux/ELF-only payload.  It is compiled with
+# clang's BPF backend and wrapped in a native object before libpython links
+# it, so the regular linker never sees an EM_BPF input object.
+# Check whether --enable-bpf-stack was given.
+if test ${enable_bpf_stack+y}
+then :
+  enableval=$enable_bpf_stack; enable_bpf_stack=$enableval
+else $as_nop
+  enable_bpf_stack=auto
+fi
+
+BPF_STACK_OBJ=""
+BPF_CLANG="${BPF_CLANG-}"
+BPF_LD="${BPF_LD-}"
+BPF_OBJCOPY="${BPF_OBJCOPY-}"
+case $host_os in #(
+  linux*) :
+    if test "x$enable_bpf_stack" != xno
+then :
+  if test -z "$BPF_CLANG"
+then :
+  BPF_CLANG=`command -v clang 2>/dev/null || :`
+fi
+    if test -z "$BPF_LD"
+then :
+  BPF_LD=`command -v ld 2>/dev/null || :`
+fi
+    if test -z "$BPF_OBJCOPY"
+then :
+  BPF_OBJCOPY=`command -v objcopy 2>/dev/null || :`
+fi
+
+    bpf_stack_available=no
+    if test -n "$BPF_CLANG" -a -n "$BPF_LD" -a -n "$BPF_OBJCOPY"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $BPF_CLANG supports -target bpf" >&5
+printf %s "checking whether $BPF_CLANG supports -target bpf... " >&6; }
+if test ${ac_cv_prog_bpf_clang+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) rm -f conftest.bpf.c conftest.bpf.o
+        cat >conftest.bpf.c <<'_ACEOF'
+int bpf_stack_probe(void *ctx) { return ctx != 0; }
+_ACEOF
+        if "$BPF_CLANG" -target bpf -c conftest.bpf.c -o conftest.bpf.o >/dev/null 2>&1
+then :
+  ac_cv_prog_bpf_clang=yes
+else case e in #(
+  e) ac_cv_prog_bpf_clang=no ;;
+esac
+fi
+        rm -f conftest.bpf.c conftest.bpf.o ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_bpf_clang" >&5
+printf "%s\n" "$ac_cv_prog_bpf_clang" >&6; }
+      if test "x$ac_cv_prog_bpf_clang" = xyes
+then :
+  bpf_stack_available=yes
+fi
+fi
+    if test "x$bpf_stack_available" = xyes
+then :
+  BPF_STACK_OBJ=Python/bpf_stack_blob.o
+else $as_nop
+  if test "x$enable_bpf_stack" = xyes
+then :
+  as_fn_error $? "--enable-bpf-stack requires clang with BPF support, ld, and objcopy" "$LINENO" 5
+fi
+fi
+fi
+ ;;
+esac
 
 # checks for libraries
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for sendfile in -lsendfile" >&5
@@ -40240,4 +40324,3 @@ if test "$ac_cv_header_stdatomic_h" != "yes"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Your compiler or platform does have a working C11 stdatomic.h. A future version of Python may require stdatomic.h." >&5
 printf "%s\n" "$as_me: Your compiler or platform does have a working C11 stdatomic.h. A future version of Python may require stdatomic.h." >&6;}
 fi
-

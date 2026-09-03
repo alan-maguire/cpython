@@ -3951,6 +3951,57 @@ AS_VAR_IF([perf_trampoline], [yes], [
 ])
 AC_SUBST([PERF_TRAMPOLINE_OBJ])
 
+dnl The BPF stack unwinder is a Linux/ELF-only payload.  It is compiled with
+dnl clang's BPF backend and wrapped in a native object before libpython links
+dnl it, so the regular linker never sees an EM_BPF input object.
+AC_ARG_ENABLE([bpf-stack],
+  [AS_HELP_STRING([--disable-bpf-stack],
+                  [do not embed the Linux eBPF stack unwinder])],
+  [enable_bpf_stack=$enableval],
+  [enable_bpf_stack=auto])
+AC_ARG_VAR([BPF_CLANG], [clang compiler used to build the eBPF stack unwinder])
+AC_ARG_VAR([BPF_LD], [linker used to wrap the eBPF ELF as a native object])
+AC_ARG_VAR([BPF_OBJCOPY], [objcopy used to name the embedded eBPF section])
+
+BPF_STACK_OBJ=""
+BPF_CLANG="${BPF_CLANG-}"
+BPF_LD="${BPF_LD-}"
+BPF_OBJCOPY="${BPF_OBJCOPY-}"
+AS_CASE([$host_os], [linux*], [
+  AS_IF([test "x$enable_bpf_stack" != xno], [
+    AS_IF([test -z "$BPF_CLANG"], [AC_PATH_PROG([BPF_CLANG], [clang])])
+    AS_IF([test -z "$BPF_LD"], [AC_PATH_TOOL([BPF_LD], [ld])])
+    AS_IF([test -z "$BPF_OBJCOPY"], [AC_PATH_TOOL([BPF_OBJCOPY], [objcopy])])
+
+    bpf_stack_available=no
+    AS_IF([test -n "$BPF_CLANG" -a -n "$BPF_LD" -a -n "$BPF_OBJCOPY"], [
+      AC_CACHE_CHECK([whether $BPF_CLANG supports -target bpf],
+        [ac_cv_prog_bpf_clang], [
+        rm -f conftest.bpf.c conftest.bpf.o
+        cat >conftest.bpf.c <<'_ACEOF'
+int bpf_stack_probe(void *ctx) { return ctx != 0; }
+_ACEOF
+        AS_IF(["$BPF_CLANG" -target bpf -c conftest.bpf.c -o conftest.bpf.o >/dev/null 2>&1],
+          [ac_cv_prog_bpf_clang=yes],
+          [ac_cv_prog_bpf_clang=no])
+        rm -f conftest.bpf.c conftest.bpf.o
+      ])
+      AS_IF([test "x$ac_cv_prog_bpf_clang" = xyes], [bpf_stack_available=yes])
+    ])
+    AS_IF([test "x$bpf_stack_available" = xyes], [
+      BPF_STACK_OBJ=Python/bpf_stack_blob.o
+    ], [
+      AS_IF([test "x$enable_bpf_stack" = xyes], [
+        AC_MSG_ERROR([--enable-bpf-stack requires clang with BPF support, ld, and objcopy])
+      ])
+    ])
+  ])
+])
+AC_SUBST([BPF_STACK_OBJ])
+AC_SUBST([BPF_CLANG])
+AC_SUBST([BPF_LD])
+AC_SUBST([BPF_OBJCOPY])
+
 # checks for libraries
 AC_CHECK_LIB([sendfile], [sendfile])
 AC_CHECK_LIB([dl], [dlopen])       # Dynamic linking for SunOS/Solaris and SYSV
