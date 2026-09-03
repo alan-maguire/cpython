@@ -1195,7 +1195,7 @@ int _PyEval_StoreName(PyThreadState *tstate, _PyStackRef v, PyObject *name, PyOb
 
 #ifdef WITH_DTRACE
 static void
-dtrace_function_entry(_PyInterpreterFrame *frame)
+dtrace_function_entry(PyThreadState *tstate, _PyInterpreterFrame *frame)
 {
     const char *filename;
     const char *funcname;
@@ -1206,11 +1206,11 @@ dtrace_function_entry(_PyInterpreterFrame *frame)
     funcname = PyUnicode_AsUTF8(code->co_name);
     lineno = PyUnstable_InterpreterFrame_GetLine(frame);
 
-    PyDTrace_FUNCTION_ENTRY(filename, funcname, lineno);
+    PyDTrace_FUNCTION_ENTRY(filename, funcname, lineno, (void *)tstate);
 }
 
 static void
-dtrace_function_return(_PyInterpreterFrame *frame)
+dtrace_function_return(PyThreadState *tstate, _PyInterpreterFrame *frame)
 {
     const char *filename;
     const char *funcname;
@@ -1221,7 +1221,7 @@ dtrace_function_return(_PyInterpreterFrame *frame)
     funcname = PyUnicode_AsUTF8(code->co_name);
     lineno = PyUnstable_InterpreterFrame_GetLine(frame);
 
-    PyDTrace_FUNCTION_RETURN(filename, funcname, lineno);
+    PyDTrace_FUNCTION_RETURN(filename, funcname, lineno, (void *)tstate);
 }
 #endif
 

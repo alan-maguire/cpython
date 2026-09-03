@@ -2245,7 +2245,7 @@ gc_collect_main(PyThreadState *tstate, int generation, _PyGC_Reason reason)
     }
 
     if (PyDTrace_GC_START_ENABLED()) {
-        PyDTrace_GC_START(generation);
+        PyDTrace_GC_START(generation, (void *)tstate);
     }
     PyTime_t start, stop;
     (void)PyTime_PerfCounterRaw(&start);
@@ -2310,7 +2310,7 @@ gc_collect_main(PyThreadState *tstate, int generation, _PyGC_Reason reason)
 #endif
 
     if (PyDTrace_GC_DONE_ENABLED()) {
-        PyDTrace_GC_DONE(n + m);
+        PyDTrace_GC_DONE(n + m, (void *)tstate);
     }
 
     if (reason != _Py_GC_REASON_SHUTDOWN) {

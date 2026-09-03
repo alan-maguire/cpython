@@ -4120,15 +4120,16 @@ import_find_and_load_with_name(PyThreadState *tstate, PyObject *abs_name,
     }
 
     if (PyDTrace_IMPORT_FIND_LOAD_START_ENABLED())
-        PyDTrace_IMPORT_FIND_LOAD_START(PyUnicode_AsUTF8(abs_name));
+        PyDTrace_IMPORT_FIND_LOAD_START(PyUnicode_AsUTF8(abs_name),
+                                        (void *)tstate);
 
     mod = PyObject_CallMethodObjArgs(IMPORTLIB(interp), find_and_load,
                                      abs_name, IMPORT_FUNC(interp), NULL);
 
     if (PyDTrace_IMPORT_FIND_LOAD_DONE_ENABLED()) {
         int found = mod != NULL && mod != not_found;
-        PyDTrace_IMPORT_FIND_LOAD_DONE(PyUnicode_AsUTF8(abs_name),
-                                       found);
+        PyDTrace_IMPORT_FIND_LOAD_DONE(PyUnicode_AsUTF8(abs_name), found,
+                                       (void *)tstate);
     }
 
     if (import_time) {

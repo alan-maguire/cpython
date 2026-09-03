@@ -1480,7 +1480,7 @@ gc_collect_main(PyThreadState *tstate, int generation, _PyGC_Reason reason)
     }
 
     if (PyDTrace_GC_START_ENABLED()) {
-        PyDTrace_GC_START(generation);
+        PyDTrace_GC_START(generation, (void *)tstate);
     }
 
     /* update collection and allocation counters */
@@ -1636,7 +1636,7 @@ gc_collect_main(PyThreadState *tstate, int generation, _PyGC_Reason reason)
 #endif
 
     if (PyDTrace_GC_DONE_ENABLED()) {
-        PyDTrace_GC_DONE(stats.uncollectable + stats.collected);
+        PyDTrace_GC_DONE(stats.uncollectable + stats.collected, (void *)tstate);
     }
 
     if (reason != _Py_GC_REASON_SHUTDOWN) {

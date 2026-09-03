@@ -271,7 +271,12 @@ should instead read:
 Available static markers
 ------------------------
 
-.. object:: function__entry(str filename, str funcname, int lineno)
+All markers have a final ``void *`` argument containing the current
+``PyThreadState *``. Existing arguments retain their positions; the new value
+is therefore the next positional argument (for example, ``$arg4`` for
+``function__entry``).
+
+.. object:: function__entry(str filename, str funcname, int lineno, void *tstate)
 
    This marker indicates that execution of a Python function has begun.
    It is only triggered for pure-Python (bytecode) functions.
@@ -287,7 +292,9 @@ Available static markers
 
        * ``$arg3`` : ``int`` line number
 
-.. object:: function__return(str filename, str funcname, int lineno)
+       * ``$arg4`` : ``(void *)`` current thread state
+
+.. object:: function__return(str filename, str funcname, int lineno, void *tstate)
 
    This marker is the converse of :c:func:`!function__entry`, and indicates that
    execution of a Python function has ended (either via ``return``, or via an
@@ -295,7 +302,7 @@ Available static markers
 
    The arguments are the same as for :c:func:`!function__entry`
 
-.. object:: line(str filename, str funcname, int lineno)
+.. object:: line(str filename, str funcname, int lineno, void *tstate)
 
    This marker indicates a Python line is about to be executed.  It is
    the equivalent of line-by-line tracing with a Python profiler.  It is
@@ -303,24 +310,24 @@ Available static markers
 
    The arguments are the same as for :c:func:`!function__entry`.
 
-.. object:: gc__start(int generation)
+.. object:: gc__start(int generation, void *tstate)
 
    Fires when the Python interpreter starts a garbage collection cycle.
    ``arg0`` is the generation to scan, like :func:`gc.collect`.
 
-.. object:: gc__done(long collected)
+.. object:: gc__done(long collected, void *tstate)
 
    Fires when the Python interpreter finishes a garbage collection
    cycle. ``arg0`` is the number of collected objects.
 
-.. object:: import__find__load__start(str modulename)
+.. object:: import__find__load__start(str modulename, void *tstate)
 
    Fires before :mod:`importlib` attempts to find and load the module.
    ``arg0`` is the module name.
 
    .. versionadded:: 3.7
 
-.. object:: import__find__load__done(str modulename, int found)
+.. object:: import__find__load__done(str modulename, int found, void *tstate)
 
    Fires after :mod:`importlib`'s find_and_load function is called.
    ``arg0`` is the module name, ``arg1`` indicates if module was
@@ -329,7 +336,7 @@ Available static markers
    .. versionadded:: 3.7
 
 
-.. object:: audit(str event, void *tuple)
+.. object:: audit(str event, void *tuple, void *tstate)
 
    Fires when :func:`sys.audit` or :c:func:`PySys_Audit` is called.
    ``arg0`` is the event name as C string, ``arg1`` is a :c:type:`PyObject`
@@ -355,40 +362,40 @@ it for you.
    * * C API Function
      * Static Marker
      * Notes
-   * * .. c:function:: void PyDTrace_LINE(const char *arg0, const char *arg1, int arg2)
+   * * .. c:function:: void PyDTrace_LINE(const char *arg0, const char *arg1, int arg2, void *arg3)
      * :c:func:`!line`
      *
-   * * .. c:function:: void PyDTrace_FUNCTION_ENTRY(const char *arg0, const char *arg1, int arg2)
+   * * .. c:function:: void PyDTrace_FUNCTION_ENTRY(const char *arg0, const char *arg1, int arg2, void *arg3)
      * :c:func:`!function__entry`
      *
-   * * .. c:function:: void PyDTrace_FUNCTION_RETURN(const char *arg0, const char *arg1, int arg2)
+   * * .. c:function:: void PyDTrace_FUNCTION_RETURN(const char *arg0, const char *arg1, int arg2, void *arg3)
      * :c:func:`!function__return`
      *
-   * * .. c:function:: void PyDTrace_GC_START(int arg0)
+   * * .. c:function:: void PyDTrace_GC_START(int arg0, void *arg1)
      * :c:func:`!gc__start`
      *
-   * * .. c:function:: void PyDTrace_GC_DONE(Py_ssize_t arg0)
+   * * .. c:function:: void PyDTrace_GC_DONE(Py_ssize_t arg0, void *arg1)
      * :c:func:`!gc__done`
      *
-   * * .. c:function:: void PyDTrace_INSTANCE_NEW_START(int arg0)
+   * * .. c:function:: void PyDTrace_INSTANCE_NEW_START(const char *arg0, const char *arg1, void *arg2)
      * :c:func:`!instance__new__start`
      * Not used by Python
-   * * .. c:function:: void PyDTrace_INSTANCE_NEW_DONE(int arg0)
+   * * .. c:function:: void PyDTrace_INSTANCE_NEW_DONE(const char *arg0, const char *arg1, void *arg2)
      * :c:func:`!instance__new__done`
      * Not used by Python
-   * * .. c:function:: void PyDTrace_INSTANCE_DELETE_START(int arg0)
+   * * .. c:function:: void PyDTrace_INSTANCE_DELETE_START(const char *arg0, const char *arg1, void *arg2)
      * :c:func:`!instance__delete__start`
      * Not used by Python
-   * * .. c:function:: void PyDTrace_INSTANCE_DELETE_DONE(int arg0)
+   * * .. c:function:: void PyDTrace_INSTANCE_DELETE_DONE(const char *arg0, const char *arg1, void *arg2)
      * :c:func:`!instance__delete__done`
      * Not used by Python
-   * * .. c:function:: void PyDTrace_IMPORT_FIND_LOAD_START(const char *arg0)
+   * * .. c:function:: void PyDTrace_IMPORT_FIND_LOAD_START(const char *arg0, void *arg1)
      * :c:func:`!import__find__load__start`
      *
-   * * .. c:function:: void PyDTrace_IMPORT_FIND_LOAD_DONE(const char *arg0, int arg1)
+   * * .. c:function:: void PyDTrace_IMPORT_FIND_LOAD_DONE(const char *arg0, int arg1, void *arg2)
      * :c:func:`!import__find__load__done`
      *
-   * * .. c:function:: void PyDTrace_AUDIT(const char *arg0, void *arg1)
+   * * .. c:function:: void PyDTrace_AUDIT(const char *arg0, void *arg1, void *arg2)
      * :c:func:`!audit`
      *
 
@@ -508,4 +515,3 @@ frames, each second, across the whole system:
         }
         delete fn_calls;
     }
-
