@@ -330,17 +330,17 @@ GETITEM(PyObject *v, Py_ssize_t i) {
 #define NAMES() _PyFrame_GetCode(frame)->co_names
 
 #if defined(WITH_DTRACE) && !defined(Py_BUILD_CORE_MODULE)
-static void dtrace_function_entry(_PyInterpreterFrame *);
-static void dtrace_function_return(_PyInterpreterFrame *);
+static void dtrace_function_entry(PyThreadState *, _PyInterpreterFrame *);
+static void dtrace_function_return(PyThreadState *, _PyInterpreterFrame *);
 
 #define DTRACE_FUNCTION_ENTRY()  \
     if (PyDTrace_FUNCTION_ENTRY_ENABLED()) { \
-        dtrace_function_entry(frame); \
+        dtrace_function_entry(tstate, frame); \
     }
 
 #define DTRACE_FUNCTION_RETURN() \
     if (PyDTrace_FUNCTION_RETURN_ENABLED()) { \
-        dtrace_function_return(frame); \
+        dtrace_function_return(tstate, frame); \
     }
 #else
 #define DTRACE_FUNCTION_ENTRY() ((void)0)

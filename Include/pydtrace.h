@@ -18,25 +18,25 @@ extern "C" {
    check to minimize performance impact when probing is off. For example:
 
        if (PyDTrace_FUNCTION_ENTRY_ENABLED())
-           PyDTrace_FUNCTION_ENTRY(f);
+           PyDTrace_FUNCTION_ENTRY(filename, funcname, lineno, tstate);
 */
 
 #else
 
 /* Without DTrace, compile to nothing. */
 
-static inline void PyDTrace_LINE(const char *arg0, const char *arg1, int arg2) {}
-static inline void PyDTrace_FUNCTION_ENTRY(const char *arg0, const char *arg1, int arg2)  {}
-static inline void PyDTrace_FUNCTION_RETURN(const char *arg0, const char *arg1, int arg2) {}
-static inline void PyDTrace_GC_START(int arg0) {}
-static inline void PyDTrace_GC_DONE(Py_ssize_t arg0) {}
-static inline void PyDTrace_INSTANCE_NEW_START(int arg0) {}
-static inline void PyDTrace_INSTANCE_NEW_DONE(int arg0) {}
-static inline void PyDTrace_INSTANCE_DELETE_START(int arg0) {}
-static inline void PyDTrace_INSTANCE_DELETE_DONE(int arg0) {}
-static inline void PyDTrace_IMPORT_FIND_LOAD_START(const char *arg0) {}
-static inline void PyDTrace_IMPORT_FIND_LOAD_DONE(const char *arg0, int arg1) {}
-static inline void PyDTrace_AUDIT(const char *arg0, void *arg1) {}
+static inline void PyDTrace_LINE(const char *arg0, const char *arg1, int arg2, void *arg3) {}
+static inline void PyDTrace_FUNCTION_ENTRY(const char *arg0, const char *arg1, int arg2, void *arg3)  {}
+static inline void PyDTrace_FUNCTION_RETURN(const char *arg0, const char *arg1, int arg2, void *arg3) {}
+static inline void PyDTrace_GC_START(int arg0, void *arg1) {}
+static inline void PyDTrace_GC_DONE(Py_ssize_t arg0, void *arg1) {}
+static inline void PyDTrace_INSTANCE_NEW_START(const char *arg0, const char *arg1, void *arg2) {}
+static inline void PyDTrace_INSTANCE_NEW_DONE(const char *arg0, const char *arg1, void *arg2) {}
+static inline void PyDTrace_INSTANCE_DELETE_START(const char *arg0, const char *arg1, void *arg2) {}
+static inline void PyDTrace_INSTANCE_DELETE_DONE(const char *arg0, const char *arg1, void *arg2) {}
+static inline void PyDTrace_IMPORT_FIND_LOAD_START(const char *arg0, void *arg1) {}
+static inline void PyDTrace_IMPORT_FIND_LOAD_DONE(const char *arg0, int arg1, void *arg2) {}
+static inline void PyDTrace_AUDIT(const char *arg0, void *arg1, void *arg2) {}
 
 static inline int PyDTrace_LINE_ENABLED(void) { return 0; }
 static inline int PyDTrace_FUNCTION_ENTRY_ENABLED(void) { return 0; }
