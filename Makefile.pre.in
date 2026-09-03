@@ -293,6 +293,10 @@ INSTSONAME=	@INSTSONAME@
 LIBRARY_DEPS=	@LIBRARY_DEPS@
 LINK_PYTHON_DEPS=@LINK_PYTHON_DEPS@
 JIT_OBJS=	@JIT_SHIM_O@
+BPF_STACK_OBJ=	@BPF_STACK_OBJ@
+BPF_CLANG=	@BPF_CLANG@
+BPF_LD=		@BPF_LD@
+BPF_OBJCOPY=	@BPF_OBJCOPY@
 PY_ENABLE_SHARED=	@PY_ENABLE_SHARED@
 STATIC_LIBPYTHON=	@STATIC_LIBPYTHON@
 
@@ -529,6 +533,7 @@ PYTHON_OBJS=	\
 		Python/perf_jit_trampoline.o \
 		Python/jit_unwind.o \
 		Python/remote_debugging.o \
+		$(BPF_STACK_OBJ) \
 		Python/$(DYNLOADFILE) \
 		$(LIBOBJS) \
 		$(MACHDEP_OBJS) \
@@ -3132,6 +3137,28 @@ Python/asm_trampoline_aarch64.o: $(srcdir)/Python/asm_trampoline_aarch64.S
 
 Python/asm_trampoline_riscv64.o: $(srcdir)/Python/asm_trampoline_riscv64.S
 	$(CC) -c $(PY_CORE_CFLAGS) -o $@ $<
+
+# Build the eBPF program as a self-contained ELF object, then turn it into a
+# native relocatable object.  The latter can be linked into libpython without
+# requiring the host linker to understand the BPF ELF machine type.
+BPF_STACK_BPF_OBJ=Python/bpf/bpf_stack.bpf.o
+BPF_STACK_OFFSETS=Python/bpf/bpf_stack_offsets.h
+BPF_STACK_OFFSETS_GEN=Python/bpf/generate_bpf_stack_offsets
+
+$(BPF_STACK_OFFSETS_GEN): $(srcdir)/Python/bpf/generate_bpf_stack_offsets.c
+	mkdir -p $(dir $@)
+	$(CC) $(PY_CORE_CFLAGS) -DPy_BUILD_CORE -o $@ $<
+
+$(BPF_STACK_OFFSETS): $(BPF_STACK_OFFSETS_GEN)
+	$< > $@
+
+$(BPF_STACK_BPF_OBJ): $(srcdir)/Python/bpf/bpf_stack.bpf.c $(BPF_STACK_OFFSETS)
+	mkdir -p $(dir $@)
+	$(BPF_CLANG) -target bpf -O2 -g -I$(dir $(BPF_STACK_OFFSETS)) -c -o $@ $<
+
+$(BPF_STACK_OBJ): $(BPF_STACK_BPF_OBJ)
+	$(BPF_LD) -r -b binary -o $@ $<
+	$(BPF_OBJCOPY) --rename-section .data=freplace/bpf_stack,alloc,load,readonly,data,contents $@
 
 # On macOS universal2 builds, $(PY_CORE_CFLAGS) contains "-arch arm64 -arch x86_64",
 # which would produce fat .o files containing both architectures for each .S input.
