@@ -8,6 +8,12 @@
 #include "bpf_stack.h"
 #include "bpf_stack_offsets.h"
 
+static long (*bpf_probe_read_user)(void *dst, __u32 size, const void *unsafe_ptr) =
+        (void *)(long)BPF_FUNC_probe_read_user;
+static long (*bpf_probe_read_user_str)(void *dst, __u32 size, const void *unsafe_ptr) =
+        (void *)(long)BPF_FUNC_probe_read_user_str;
+
+
 #define SEC(NAME) __attribute__((section(NAME), used))
 #define EFAULT 14
 #define ENOSPC 28
