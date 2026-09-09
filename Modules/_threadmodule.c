@@ -2,6 +2,7 @@
 /* Interface to Sjoerd's portable C thread library */
 
 #include "Python.h"
+#include "pydtrace.h"
 #include "pycore_fileutils.h"     // _PyFile_Flush
 #include "pycore_interp.h"        // _PyInterpreterState.threads.count
 #include "pycore_lock.h"
@@ -383,6 +384,9 @@ thread_run(void *boot_raw)
 
     _PyThreadState_Bind(tstate);
     PyEval_AcquireThread(tstate);
+    if (PyDTrace_THREAD_START_ENABLED()) {
+        PyDTrace_THREAD_START(tstate);
+    }
     _Py_atomic_add_ssize(&tstate->interp->threads.count, 1);
 
     PyObject *res = PyObject_Call(boot->func, boot->args, boot->kwargs);
@@ -402,6 +406,9 @@ thread_run(void *boot_raw)
     thread_bootstate_free(boot, 1);
 
     _Py_atomic_add_ssize(&tstate->interp->threads.count, -1);
+    if (PyDTrace_THREAD_EXIT_ENABLED()) {
+        PyDTrace_THREAD_EXIT(tstate);
+    }
     PyThreadState_Clear(tstate);
     _PyThreadState_DeleteCurrent(tstate);
 
