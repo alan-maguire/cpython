@@ -13,6 +13,8 @@ provider python {
     probe import__find__load__start(const char *, void *);
     probe import__find__load__done(const char *, int, void *);
     probe audit(const char *, void *, void *);
+    probe thread__start(void *);
+    probe thread__exit(void *);
 };
 
 #pragma D attributes Evolving/Evolving/Common provider python provider

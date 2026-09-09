@@ -1,6 +1,7 @@
 /* Python interpreter top-level routines, including init/exit */
 
 #include "Python.h"
+#include "pydtrace.h"
 #include "pycore_audit.h"         // _PySys_ClearAuditHooks()
 #include "pycore_call.h"          // _PyObject_CallMethod()
 #include "pycore_ceval.h"         // _PyEval_FiniGIL()
@@ -2732,6 +2733,9 @@ new_interpreter(PyThreadState **tstate_p,
     }
 
     _PyThreadState_Bind(tstate);
+    if (PyDTrace_THREAD_START_ENABLED()) {
+        PyDTrace_THREAD_START(tstate);
+    }
     init_interp_create_gil(tstate, config->gil);
 
     /* No objects have been created yet. */
