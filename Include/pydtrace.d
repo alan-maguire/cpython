@@ -15,6 +15,7 @@ provider python {
     probe audit(const char *, void *, void *);
     probe thread__start(void *);
     probe thread__exit(void *);
+    probe bpf_stack__setcontext(void *);
 };
 
 #pragma D attributes Evolving/Evolving/Common provider python provider

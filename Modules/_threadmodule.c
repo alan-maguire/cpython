@@ -387,6 +387,9 @@ thread_run(void *boot_raw)
     if (PyDTrace_THREAD_START_ENABLED()) {
         PyDTrace_THREAD_START(tstate);
     }
+    if (PyDTrace_BPF_STACK_SETCONTEXT_ENABLED()) {
+        PyDTrace_BPF_STACK_SETCONTEXT(tstate);
+    }
     _Py_atomic_add_ssize(&tstate->interp->threads.count, 1);
 
     PyObject *res = PyObject_Call(boot->func, boot->args, boot->kwargs);
@@ -408,6 +411,9 @@ thread_run(void *boot_raw)
     _Py_atomic_add_ssize(&tstate->interp->threads.count, -1);
     if (PyDTrace_THREAD_EXIT_ENABLED()) {
         PyDTrace_THREAD_EXIT(tstate);
+    }
+    if (PyDTrace_BPF_STACK_SETCONTEXT_ENABLED()) {
+        PyDTrace_BPF_STACK_SETCONTEXT(NULL);
     }
     PyThreadState_Clear(tstate);
     _PyThreadState_DeleteCurrent(tstate);
